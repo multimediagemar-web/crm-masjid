@@ -10,6 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CRM Ashqaf">
     
+    <!-- Link to external Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text x='50' y='50' font-family='Arial' font-size='30' font-weight='bold' fill='white' dominant-baseline='middle' text-anchor='middle'>CRM</text></svg>">
+    
     <title>CRM MASJID ASHQAF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -361,77 +365,18 @@
         };
         const appId = firebaseConfig.projectId; // Digunakan untuk struktur folder database
 
-        // PWA Setup (Manifest Injection & Inline Service Worker)
-        const setupPWA = () => {
-            // 1. Setup Manifest
-            const manifest = {
-                name: "CRM MASJID ASHQAF",
-                short_name: "CRM Ashqaf",
-                start_url: window.location.pathname, // Gunakan path saat ini agar fleksibel di GitHub Pages
-                display: "standalone",
-                background_color: "#f3f4f6",
-                theme_color: "#4f46e5",
-                icons: [
-                    {
-                        src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text x='50' y='50' font-family='Arial' font-size='30' font-weight='bold' fill='white' dominant-baseline='middle' text-anchor='middle'>CRM</text></svg>",
-                        sizes: "512x512",
-                        type: "image/svg+xml",
-                        purpose: "any maskable"
-                    }
-                ]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-            const manifestUrl = URL.createObjectURL(manifestBlob);
-            const link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = manifestUrl;
-            document.head.appendChild(link);
-
-            // 2. Setup Inline Service Worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    // Kode Service Worker sederhana untuk membypass syarat PWA
-                    const swCode = `
-                        const CACHE_NAME = 'crm-ashqaf-v1';
-                        
-                        self.addEventListener('install', (event) => {
-                            self.skipWaiting();
-                        });
-
-                        self.addEventListener('activate', (event) => {
-                            event.waitUntil(self.clients.claim());
-                        });
-
-                        self.addEventListener('fetch', (event) => {
-                            // Strategi Network First, fallback to cache (meski cache kosong, ini memenuhi syarat PWA)
-                            event.respondWith(
-                                fetch(event.request).catch(() => {
-                                    return new Response('Aplikasi offline. Hubungkan ke internet untuk menggunakan CRM.', {
-                                        status: 503,
-                                        statusText: 'Service Unavailable',
-                                        headers: new Headers({ 'Content-Type': 'text/plain' })
-                                    });
-                                })
-                            );
-                        });
-                    `;
-
-                    // Buat file Blob dari kode SW di atas
-                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                    const swUrl = URL.createObjectURL(swBlob);
-
-                    // Daftarkan Blob URL tersebut sebagai Service Worker
-                    navigator.serviceWorker.register(swUrl)
-                        .then(registration => {
-                            console.log('ServiceWorker berhasil didaftarkan (Inline). Scope:', registration.scope);
-                        })
-                        .catch(err => {
-                            console.log('Gagal mendaftarkan ServiceWorker:', err);
-                        });
-                });
-            }
-        };
-        setupPWA();
+        // Registrasi Service Worker Eksternal
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker terdaftar dengan sukses:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('Pendaftaran ServiceWorker gagal:', err);
+                    });
+            });
+        }
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
